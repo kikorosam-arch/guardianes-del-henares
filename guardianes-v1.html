@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Guardianes del Henares</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Tipografía moderna y legible -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+  </style>
+</head>
+
+<body class="bg-emerald-50 min-h-screen flex flex-col text-gray-800">
+
+<!-- ================= PANTALLA 1 · BIENVENIDA ================= -->
+<section id="screen-welcome" class="flex-1 flex flex-col justify-center items-center p-6 text-center">
+  <h1 class="text-4xl font-extrabold mb-4">🌿 Guardianes del Henares</h1>
+  <p class="mb-4 max-w-md">
+    La cuenca del río Henares es hogar de miles de especies animales y vegetales.
+    Hoy comienza una aventura para descubrirlas, respetarlas y protegerlas.
+  </p>
+
+  <ul class="text-sm mb-6">
+    <li>📍 Más de 100 municipios</li>
+    <li>🐾 +100.000 especies animales</li>
+    <li>🌱 +2.000.000 especies vegetales</li>
+  </ul>
+
+  <p class="font-semibold mb-6">
+    ¿Te conviertes en Guardián del Henares?
+  </p>
+
+  <button onclick="goToSetup()"
+    class="bg-emerald-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-emerald-700">
+    ▶️ Comenzar aventura
+  </button>
+</section>
+
+<!-- ================= PANTALLA 2 · CONFIGURACIÓN ================= -->
+<section id="screen-setup" class="hidden flex-1 p-6">
+  <div class="max-w-md mx-auto w-full">
+    <h2 class="text-2xl font-bold mb-4 text-center">👥 Crear grupo</h2>
+
+    <label class="block mb-2">Nombre del grupo</label>
+    <input id="groupName" class="w-full p-2 border rounded mb-4" placeholder="Ej. Guardianes Verdes">
+
+    <label class="block mb-2">Número de participantes (1–5)</label>
+    <input id="players" type="number" min="1" max="5" value="3" class="w-full p-2 border rounded mb-4">
+
+    <label class="block mb-2">Rondas</label>
+    <select id="rounds" class="w-full p-2 border rounded mb-4">
+      <option value="3">3 rondas</option>
+      <option value="5">5 rondas</option>
+      <option value="10">10 rondas</option>
+    </select>
+
+    <label class="block mb-4">
+      <input id="timed" type="checkbox" checked>
+      Jugar con tiempo (5 minutos)
+    </label>
+
+    <button onclick="startGame()"
+      class="w-full bg-emerald-600 text-white py-3 rounded-xl font-bold">
+      🌱 Iniciar juego
+    </button>
+  </div>
+</section>
+
+<!-- ================= PANTALLA 3 · JUEGO ================= -->
+<section id="screen-game" class="hidden flex-1 p-4">
+  <div class="max-w-md mx-auto w-full">
+
+    <div class="flex justify-between mb-4">
+      <span id="roundInfo" class="font-bold"></span>
+      <span id="timer" class="font-bold text-red-600"></span>
+    </div>
+
+    <div class="bg-white rounded-xl p-4 shadow mb-4">
+      <h3 class="text-xl font-bold mb-2">🔍 Pistas</h3>
+      <ul id="clues" class="text-sm space-y-1"></ul>
+    </div>
+
+    <button onclick="foundSpecies()"
+      class="w-full bg-emerald-600 text-white py-3 rounded-xl font-bold mb-2">
+      👀 ¡Lo encontré!
+    </button>
+
+    <button onclick="callGroup()"
+      class="w-full bg-blue-500 text-white py-2 rounded-xl">
+      📣 Llamar al grupo
+    </button>
+  </div>
+</section>
+
+<!-- ================= PANTALLA 4 · RESULTADOS ================= -->
+<section id="screen-end" class="hidden flex-1 p-6 text-center">
+  <h2 class="text-3xl font-extrabold mb-4">🏆 ¡Enhorabuena!</h2>
+  <p class="mb-4">
+    Habéis completado la misión y os convertís en
+  </p>
+  <p class="text-xl font-bold mb-6">🌊 Guardianes del Henares 🌿</p>
+
+  <div class="mb-6 text-sm">
+    <p>🔗 Para seguir explorando:</p>
+    <a class="text-emerald-600 underline" href="https://seo.org" target="_blank">SEO BirdLife</a><br>
+    <a class="text-emerald-600 underline" href="https://bibdigital.rjb.csic.es" target="_blank">
+      Real Jardín Botánico
+    </a>
+  </div>
+
+  <p class="font-semibold">
+    Premio simbólico: excursión especial o camiseta de Guardián 🌱
+  </p>
+</section>
+
+<!-- ================= JAVASCRIPT ================= -->
+<script>
+/* ================= DATOS FAUNA (MVP) ================= */
+const species = [
+  {
+    name: "Pinzón común",
+    clues: ["🐦 Ave pequeña", "🎨 Marrón y gris", "👥 En parejas", "👀 A media altura"],
+    info: "El macho es más colorido. Muy abundante y fácil de escuchar."
+  },
+  {
+    name: "Corzo",
+    clues: ["🦌 Mamífero grande", "🌿 Color marrón", "👤 Solitario", "👀 En claros"],
+    info: "El macho tiene cuernas. Muy esquivo."
+  }
+];
+
+let currentRound = 1;
+let maxRounds = 3;
+let timerInterval;
+
+/* ================= NAVEGACIÓN ================= */
+function showScreen(id) {
+  document.querySelectorAll("section").forEach(s => s.classList.add("hidden"));
+  document.getElementById(id).classList.remove("hidden");
+}
+
+function goToSetup() {
+  showScreen("screen-setup");
+}
+
+/* ================= JUEGO ================= */
+function startGame() {
+  maxRounds = parseInt(document.getElementById("rounds").value);
+  currentRound = 1;
+  nextRound();
+}
+
+function nextRound() {
+  if (currentRound > maxRounds) {
+    showScreen("screen-end");
+    return;
+  }
+
+  showScreen("screen-game");
+  document.getElementById("roundInfo").innerText =
+    `Ronda ${currentRound} de ${maxRounds}`;
+
+  const sp = species[currentRound % species.length];
+  const clues = document.getElementById("clues");
+  clues.innerHTML = "";
+  sp.clues.forEach(c => {
+    const li = document.createElement("li");
+    li.textContent = c;
+    clues.appendChild(li);
+  });
+
+  startTimer();
+}
+
+function startTimer() {
+  let time = 300;
+  const timer = document.getElementById("timer");
+  clearInterval(timerInterval);
+  timerInterval = setInterval(() => {
+    const m = Math.floor(time / 60);
+    const s = time % 60;
+    timer.textContent = `${m}:${s.toString().padStart(2, "0")}`;
+    time--;
+    if (time < 0) {
+      clearInterval(timerInterval);
+      currentRound++;
+      nextRound();
+    }
+  }, 1000);
+}
+
+function foundSpecies() {
+  clearInterval(timerInterval);
+  alert("¡Especie encontrada! 🌱");
+  currentRound++;
+  nextRound();
+}
+
+function callGroup() {
+  alert("📣 Aviso enviado al grupo");
+}
+</script>
+
+</body>
+</html>

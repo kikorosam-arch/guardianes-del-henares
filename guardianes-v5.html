@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Guardianes del Henares</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Fuente -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+
+    .petal {
+      position: fixed;
+      top: -10px;
+      font-size: 20px;
+      animation: fall linear forwards;
+    }
+    @keyframes fall {
+      to {
+        transform: translateY(110vh) rotate(360deg);
+        opacity: 0;
+      }
+    }
+  </style>
+</head>
+
+<body class="bg-green-100 flex justify-center items-center min-h-screen">
+
+<!-- CONTENEDOR MÓVIL -->
+<div class="w-[375px] h-[667px] bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col">
+
+<header class="bg-green-700 text-white text-center p-4 font-extrabold">
+🌿 Guardianes del Henares
+</header>
+
+<main id="app" class="flex-1 p-4 overflow-y-auto text-center">
+
+<!-- PANTALLA INICIO -->
+<section id="screen-start">
+  <h1 class="text-2xl font-extrabold mb-4">Bienvenidos</h1>
+  <p class="mb-4">
+    Hoy os convertiréis en exploradores de la cuenca del Henares.
+    Observad, cooperad y descubrid.
+  </p>
+  <button onclick="startGame()" class="bg-green-600 text-white px-6 py-3 rounded-full">
+    Comenzar aventura 🌱
+  </button>
+</section>
+
+<!-- PANTALLA JUEGO -->
+<section id="screen-game" class="hidden">
+  <h2 class="text-lg font-bold mb-2">Pistas de la especie</h2>
+
+  <!-- Ilustración -->
+  <div class="w-full h-40 bg-green-50 rounded-xl flex items-center justify-center mb-3">
+    <img id="speciesImg" class="h-full object-contain hidden" alt="Ilustración">
+    <span id="imgFallback" class="text-sm italic text-gray-500">
+      Ilustración naturalista de la especie
+    </span>
+  </div>
+
+  <!-- Pistas -->
+  <div class="bg-green-50 p-3 rounded-xl mb-3 text-left text-sm">
+    <p>👀 <strong>Dónde buscar:</strong> <span id="hintHeight"></span></p>
+    <p>🎨 <strong>Color:</strong> <span id="hintColor"></span></p>
+    <p>📏 <strong>Tamaño:</strong> <span id="hintSize"></span></p>
+    <p>🤝 <strong>Comportamiento:</strong> <span id="hintGroup"></span></p>
+  </div>
+
+  <!-- Temporizadores -->
+  <div class="flex justify-between mb-3 font-semibold text-sm">
+    <span>⏱️ <span id="timerMain"></span></span>
+    <span>📣 <span id="timerGroup">--</span></span>
+  </div>
+
+  <button onclick="foundSpecies()" class="w-full bg-green-600 text-white py-2 rounded-full mb-2">
+    ¡La hemos encontrado!
+  </button>
+
+  <button onclick="callGroup()" class="w-full bg-yellow-500 text-white py-2 rounded-full">
+    Llamar al grupo 📣
+  </button>
+</section>
+
+<!-- PANTALLA DESCUBRIMIENTO -->
+<section id="screen-discovery" class="hidden">
+  <h2 id="discoveryName" class="text-2xl font-extrabold mb-3"></h2>
+
+  <div class="w-full h-40 bg-green-50 rounded-xl flex items-center justify-center mb-3">
+    <img id="discoveryImg" class="h-full object-contain hidden">
+    <span class="text-sm italic text-gray-500">Ilustración naturalista</span>
+  </div>
+
+  <div class="text-left text-sm space-y-2 mb-4">
+    <p><strong>🌱 Cría / reproducción:</strong> <span id="infoRepro"></span></p>
+    <p><strong>👀 Dimorfismo:</strong> <span id="infoDimorf"></span></p>
+    <p><strong>✨ Curiosidad:</strong> <span id="infoCurious"></span></p>
+  </div>
+
+  <a id="wikiLink" target="_blank"
+     class="block bg-blue-600 text-white py-2 rounded-full mb-2">
+    Saber más 🔍
+  </a>
+
+  <button onclick="nextSpecies()" class="w-full bg-green-600 text-white py-2 rounded-full">
+    Continuar
+  </button>
+</section>
+
+<!-- PANTALLA FINAL -->
+<section id="screen-end" class="hidden">
+  <h2 class="text-2xl font-extrabold mb-3">🎉 Enhorabuena</h2>
+  <p class="mb-2">Habéis completado la misión</p>
+  <p class="text-lg font-bold mb-4">
+    Puntuación total: <span id="finalScore"></span>
+  </p>
+  <p>
+    Desde hoy sois<br>
+    <strong>Guardianes del Henares 🌿</strong>
+  </p>
+</section>
+
+</main>
+</div>
+
+<script>
+const species = [
+{
+  name: "Amapola común",
+  img: "",
+  height: "Por el suelo",
+  color: "Rojo intenso",
+  size: "Pequeña",
+  group: "Sola",
+  repro: "Se reproduce por semillas muy abundantes.",
+  dimorf: "No presenta dimorfismo.",
+  curious: "Sus pétalos se cierran al anochecer.",
+  wiki: "https://es.wikipedia.org/wiki/Papaver_rhoeas"
+},
+{
+  name: "Pinzón común",
+  img: "",
+  height: "Copas de árboles",
+  color: "Pardo y amarillo",
+  size: "Pequeño",
+  group: "En grupo",
+  repro: "Cría en primavera en nidos escondidos.",
+  dimorf: "Machos más coloridos que hembras.",
+  curious: "Su canto varía según la región.",
+  wiki: "https://es.wikipedia.org/wiki/Fringilla_coelebs"
+}
+];
+
+let index = 0;
+let score = 0;
+let mainTimer, groupTimer;
+
+function startGame(){
+  hideAll();
+  document.getElementById("screen-game").classList.remove("hidden");
+  loadSpecies();
+}
+
+function loadSpecies(){
+  const s = species[index];
+  document.getElementById("hintHeight").textContent = s.height;
+  document.getElementById("hintColor").textContent = s.color;
+  document.getElementById("hintSize").textContent = s.size;
+  document.getElementById("hintGroup").textContent = s.group;
+  startTimer(300);
+}
+
+function startTimer(sec){
+  clearInterval(mainTimer);
+  document.getElementById("timerMain").textContent = format(sec);
+  mainTimer = setInterval(()=>{
+    sec--;
+    document.getElementById("timerMain").textContent = format(sec);
+    if(sec<=0) foundSpecies();
+  },1000);
+}
+
+function callGroup(){
+  clearInterval(groupTimer);
+  let t=15;
+  document.getElementById("timerGroup").textContent = t+"s";
+  groupTimer=setInterval(()=>{
+    t--;
+    document.getElementById("timerGroup").textContent = t+"s";
+    if(t<=0){ clearInterval(groupTimer); score+=6; }
+  },1000);
+}
+
+function foundSpecies(){
+  clearInterval(mainTimer);
+  score+=10;
+  showDiscovery();
+}
+
+function showDiscovery(){
+  hideAll();
+  const s=species[index];
+  document.getElementById("discoveryName").textContent=s.name;
+  document.getElementById("infoRepro").textContent=s.repro;
+  document.getElementById("infoDimorf").textContent=s.dimorf;
+  document.getElementById("infoCurious").textContent=s.curious;
+  document.getElementById("wikiLink").href=s.wiki;
+  document.getElementById("screen-discovery").classList.remove("hidden");
+}
+
+function nextSpecies(){
+  index++;
+  if(index>=species.length){ endGame(); }
+  else{
+    hideAll();
+    document.getElementById("screen-game").classList.remove("hidden");
+    loadSpecies();
+  }
+}
+
+function endGame(){
+  hideAll();
+  document.getElementById("finalScore").textContent=score;
+  document.getElementById("screen-end").classList.remove("hidden");
+  confetti();
+}
+
+function hideAll(){
+  ["screen-start","screen-game","screen-discovery","screen-end"]
+  .forEach(id=>document.getElementById(id).classList.add("hidden"));
+}
+
+function format(s){
+  return Math.floor(s/60)+":"+String(s%60).padStart(2,"0");
+}
+
+function confetti(){
+  for(let i=0;i<30;i++){
+    const p=document.createElement("div");
+    p.className="petal";
+    p.textContent="🌸";
+    p.style.left=Math.random()*100+"vw";
+    p.style.animationDuration=2+Math.random()*3+"s";
+    document.body.appendChild(p);
+    setTimeout(()=>p.remove(),5000);
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Guardianes del Henares</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+
+  <style>
+    body { font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+    .petal{
+      position:fixed; top:-18px; font-size:18px; pointer-events:none;
+      animation:fall linear forwards;
+      z-index: 9999;
+    }
+    @keyframes fall{
+      to{ transform:translateY(110vh) rotate(360deg); opacity:0; }
+    }
+    /* Accesibilidad: foco visible */
+    :focus-visible { outline: 3px solid rgba(16,185,129,.7); outline-offset: 2px; border-radius: 12px; }
+  </style>
+</head>
+
+<body class="min-h-screen bg-emerald-100 flex items-center justify-center p-4">
+
+  <!-- Marco tipo móvil -->
+  <div class="w-[390px] max-w-full h-[780px] bg-white rounded-[32px] shadow-2xl overflow-hidden flex flex-col border border-emerald-200">
+    <header class="bg-emerald-700 text-white p-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-lg font-extrabold tracking-tight">🌿 Guardianes del Henares</h1>
+          <p class="text-xs opacity-90">Explora · Observa · Protege</p>
+        </div>
+        <button id="btnHelp" class="text-xs bg-white/15 hover:bg-white/20 px-3 py-2 rounded-full" aria-label="Abrir instrucciones">
+          ℹ️ Ayuda
+        </button>
+      </div>
+    </header>
+
+    <main id="app" class="flex-1 overflow-y-auto p-4">
+
+      <!-- INICIO -->
+      <section id="screenStart" class="space-y-4">
+        <div class="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 text-left">
+          <p class="text-sm leading-relaxed">
+            Hoy el río os invita a mirar con calma. A descubrir sin hacer daño.
+            A trabajar en equipo. Y a volver a casa con una idea clara:
+            <span class="font-semibold">proteger empieza por conocer</span>.
+          </p>
+        </div>
+
+        <div class="rounded-2xl bg-white border border-emerald-100 p-4 text-left">
+          <h2 class="text-base font-extrabold mb-2">📍 ¿Qué vais a hacer?</h2>
+          <ul class="text-sm list-disc pl-5 space-y-1">
+            <li>Recibir pistas de una especie de la cuenca del Henares.</li>
+            <li>Buscarla en el entorno sin prisas, sin arrancar, sin molestar.</li>
+            <li>Si alguien la encuentra, el equipo se reúne para observarla juntas/os.</li>
+            <li>Tras cada ronda, una ficha curiosa para aprender de verdad.</li>
+          </ul>
+        </div>
+
+        <button id="btnGoSetup" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-2xl">
+          ▶️ Empezar la aventura
+        </button>
+
+        <p class="text-xs text-gray-500 text-center">
+          Funciona sin internet (salvo los enlaces a Wikipedia). Diseñada para Firefox.
+        </p>
+      </section>
+
+      <!-- SETUP -->
+      <section id="screenSetup" class="hidden space-y-4">
+        <div class="text-left">
+          <h2 class="text-lg font-extrabold">👥 Equipo</h2>
+          <p class="text-sm text-gray-600">Pon nombres reales. Aquí se juega en grupo.</p>
+        </div>
+
+        <div class="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 space-y-3 text-left">
+          <label class="block text-sm font-semibold" for="playerCount">Número de participantes (1–5)</label>
+          <input id="playerCount" type="number" min="1" max="5" value="3"
+                 class="w-full border rounded-xl p-3" />
+
+          <div id="playerNames" class="space-y-2"></div>
+
+          <label class="block text-sm font-semibold mt-2" for="roundCount">Rondas</label>
+          <select id="roundCount" class="w-full border rounded-xl p-3">
+            <option value="3">3 especies (sesión corta)</option>
+            <option value="5">5 especies (sesión estándar)</option>
+            <option value="10">10 especies (sesión completa)</option>
+          </select>
+
+          <p class="text-xs text-gray-600">
+            El número de rondas se adapta al tiempo disponible del centro.
+          </p>
+        </div>
+
+        <button id="btnStartGame" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-2xl">
+          🌱 Iniciar misión
+        </button>
+
+        <button id="btnBackHome" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold py-3 rounded-2xl">
+          ↩️ Volver
+        </button>
+      </section>
+
+      <!-- JUEGO -->
+      <section id="screenGame" class="hidden space-y-3">
+        <!-- Narrativa -->
+        <div class="bg-amber-50 border border-amber-100 rounded-2xl p-4 text-left">
+          <p class="text-sm font-semibold" id="storyTitle"></p>
+          <p class="text-sm text-gray-700 mt-1" id="storyText"></p>
+        </div>
+
+        <!-- Barra superior -->
+        <div class="flex items-center justify-between">
+          <div class="text-left">
+            <p class="text-xs text-gray-500">Ronda</p>
+            <p class="font-extrabold" id="roundLabel">1/3</p>
+          </div>
+
+          <div class="text-right">
+            <p class="text-xs text-gray-500">Tiempo</p>
+            <p class="font-extrabold text-red-600 tabular-nums" id="mainTimer">00:00</p>
+          </div>
+        </div>
+
+        <!-- Marcadores -->
+        <div class="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 text-left">
+          <div class="flex items-center justify-between">
+            <p class="font-bold">🏅 Marcador</p>
+            <p class="text-sm font-extrabold">Equipo: <span id="teamTotal">0</span> pts</p>
+          </div>
+          <div id="scoreList" class="mt-2 text-sm space-y-1"></div>
+        </div>
+
+        <!-- Pistas -->
+        <div class="bg-white border border-emerald-100 rounded-2xl p-4 text-left">
+          <div class="flex items-center justify-between">
+            <p class="font-bold">🔍 Pistas</p>
+            <span class="text-xs bg-emerald-100 text-emerald-800 px-2 py-1 rounded-full" id="difficultyChip">Nivel</span>
+          </div>
+          <div class="mt-2 text-sm space-y-1">
+            <p>👀 <span class="font-semibold">Dónde buscar:</span> <span id="clueHeight"></span></p>
+            <p>🎨 <span class="font-semibold">Color:</span> <span id="clueColor"></span></p>
+            <p>📏 <span class="font-semibold">Tamaño:</span> <span id="clueSize"></span></p>
+            <p>🤝 <span class="font-semibold">En grupo o no:</span> <span id="clueGroup"></span></p>
+          </div>
+        </div>
+
+        <!-- Ilustración SVG integrada (siempre estable) -->
+        <div class="bg-emerald-50 border border-emerald-100 rounded-2xl p-4">
+          <div class="text-left flex items-center justify-between">
+            <p class="font-bold">🖼️ Ilustración naturalista</p>
+            <p class="text-xs text-gray-500">Dibujo (MVP)</p>
+          </div>
+          <div class="mt-3 bg-white rounded-2xl border border-emerald-100 h-40 flex items-center justify-center" id="svgHolder" aria-label="Ilustración de la especie"></div>
+          <p class="text-xs text-gray-600 mt-2 text-left">
+            En versión completa se usarían ilustraciones propias o banco autorizado. Aquí se usa dibujo estable integrado.
+          </p>
+        </div>
+
+        <!-- Acciones -->
+        <div class="space-y-2">
+          <button id="btnFound" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-2xl">
+            ✔️ La hemos encontrado
+          </button>
+
+          <button id="btnCall" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-2xl hidden">
+            📣 Llamar al equipo (15s)
+          </button>
+
+          <div id="meetingBar" class="hidden bg-indigo-50 border border-indigo-100 rounded-2xl p-3 text-left">
+            <div class="flex items-center justify-between">
+              <p class="font-bold">🤝 Reunión</p>
+              <p class="font-extrabold tabular-nums" id="meetingTimer">15</p>
+            </div>
+            <p class="text-sm text-gray-700 mt-1">
+              Reuníos y observad juntas/os la especie. Si lo conseguís a tiempo: <span class="font-semibold">+6 para todo el equipo</span>.
+            </p>
+            <button id="btnAllHere" class="mt-3 w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 rounded-xl">
+              ✅ Estamos todos
+            </button>
+          </div>
+        </div>
+
+        <p class="text-xs text-gray-500 text-center">
+          Consejo: mirad primero alrededor sin correr. El río premia la calma.
+        </p>
+      </section>
+
+      <!-- DISCOVERY -->
+      <section id="screenDiscovery" class="hidden space-y-3">
+        <div class="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 text-left">
+          <p class="text-xs text-gray-600" id="discoveryHeader"></p>
+          <h2 class="text-xl font-extrabold mt-1" id="speciesName"></h2>
+        </div>
+
+        <div class="bg-white border border-emerald-100 rounded-2xl p-4">
+          <div class="text-left flex items-center justify-between">
+            <p class="font-bold">🖼️ Ilustración</p>
+            <p class="text-xs text-gray-500">Dibujo (MVP)</p>
+          </div>
+          <div class="mt-3 bg-emerald-50 rounded-2xl border border-emerald-100 h-40 flex items-center justify-center" id="svgHolder2"></div>
+        </div>
+
+        <div class="bg-white border border-emerald-100 rounded-2xl p-4 text-left space-y-2 text-sm">
+          <p><span class="font-bold">🐣 Reproducción:</span> <span id="infoRepro"></span></p>
+          <p><span class="font-bold">⚥ Dimorfismo:</span> <span id="infoDimorph"></span></p>
+          <p><span class="font-bold">✨ Curiosidad:</span> <span id="infoCurious"></span></p>
+        </div>
+
+        <div class="bg-amber-50 border border-amber-100 rounded-2xl p-4 text-left text-sm" id="roundPointsBox"></div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <a id="wikiLink" target="_blank" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-2xl text-center">
+            🔎 Wikipedia
+          </a>
+          <button id="btnNext" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-2xl">
+            ▶️ Siguiente
+          </button>
+        </div>
+      </section>
+
+      <!-- FINAL -->
+      <section id="screenEnd" class="hidden space-y-4">
+        <div class="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 text-left">
+          <h2 class="text-2xl font-extrabold">🎉 ¡Misión completada!</h2>
+          <p class="text-sm text-gray-700 mt-1">
+            Hoy habéis aprendido a mirar. Y eso cambia lo que protegemos.
+          </p>
+        </div>
+
+        <div class="bg-white border border-emerald-100 rounded-2xl p-4 text-left">
+          <p class="font-bold">🏆 Marcador final</p>
+          <p class="text-sm mt-1">Total del equipo: <span class="font-extrabold" id="finalTeamTotal">0</span> pts</p>
+          <div id="finalRanking" class="mt-2 text-sm space-y-1"></div>
+        </div>
+
+        <div class="bg-amber-50 border border-amber-100 rounded-2xl p-4 text-left">
+          <p class="font-bold">🧭 Próximo paso</p>
+          <p class="text-sm mt-1">
+            Reuníos ahora con el <span class="font-semibold">Guardián Jefe</span> y compartid vuestros resultados con los compañeros de otros equipos.
+          </p>
+        </div>
+
+        <button id="btnRestart" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-2xl">
+          🔁 Nueva partida
+        </button>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Modal ayuda -->
+  <div id="helpModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50" role="dialog" aria-modal="true" aria-label="Instrucciones">
+    <div class="bg-white rounded-2xl w-full max-w-md p-4 border border-emerald-100">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-extrabold">ℹ️ Instrucciones rápidas</h3>
+        <button id="btnCloseHelp" class="text-sm bg-gray-100 hover:bg-gray-200 px-3 py-2 rounded-xl">Cerrar</button>
+      </div>
+      <div class="mt-3 text-sm text-gray-700 space-y-2">
+        <p><span class="font-semibold">Objetivo:</span> observar especies del Henares sin dañar el entorno.</p>
+        <p><span class="font-semibold">Puntos:</span> al encontrar, +5 a todas/os; quien lo encuentra +5 extra; si os reunís a tiempo +6 a todas/os.</p>
+        <p><span class="font-semibold">Si no se encuentra:</span> 0 puntos, pero aprendéis igualmente con la ficha.</p>
+        <p><span class="font-semibold">Consejo:</span> caminad despacio. Mirad altura/suelo y escuchad.</p>
+      </div>
+    </div>
+  </div>
+
+<script>
+/* ==========
+  PRIORIDADES DE DISEÑO (para que sea estable)
+  - Un estado global claro
+  - Temporizadores siempre limpiados
+  - Selección de especies sin repetición
+========== */
+
+/* ====== SVG “dibujo naturalista” estable (sin red) ====== */
+function svgPlant() {
+  return `
+  <svg width="240" height="140" viewBox="0 0 240 140" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <path d="M120 128 C118 98, 132 78, 120 48" stroke="#065F46" stroke-width="4" stroke-linecap="round"/>
+    <path d="M120 85 C98 80, 84 64, 70 55" stroke="#047857" stroke-width="4" stroke-linecap="round"/>
+    <path d="M120 78 C142 72, 156 56, 170 48" stroke="#047857" stroke-width="4" stroke-linecap="round"/>
+    <path d="M120 48 C112 36, 105 28, 96 22" stroke="#16A34A" stroke-width="4" stroke-linecap="round"/>
+    <path d="M120 48 C128 36, 136 28, 146 22" stroke="#16A34A" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="120" cy="44" r="10" stroke="#F59E0B" stroke-width="4"/>
+    <path d="M70 125 H170" stroke="#A16207" stroke-width="4" stroke-linecap="round"/>
+  </svg>`;
+}
+function svgBird() {
+  return `
+  <svg width="240" height="140" viewBox="0 0 240 140" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <path d="M60 98 C85 78, 115 70, 145 78 C165 83, 175 98, 165 112 C152 131, 115 130, 90 118 C75 110, 65 106, 60 98 Z"
+      stroke="#1F2937" stroke-width="4" fill="none" stroke-linejoin="round"/>
+    <path d="M110 84 C105 70, 112 58, 126 52 C140 46, 152 52, 155 64"
+      stroke="#111827" stroke-width="4" stroke-linecap="round"/>
+    <path d="M155 64 L175 58" stroke="#111827" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="148" cy="80" r="3" fill="#111827"/>
+    <path d="M95 110 L84 124" stroke="#92400E" stroke-width="4" stroke-linecap="round"/>
+    <path d="M120 112 L112 128" stroke="#92400E" stroke-width="4" stroke-linecap="round"/>
+    <path d="M70 128 H190" stroke="#A16207" stroke-width="4" stroke-linecap="round"/>
+  </svg>`;
+}
+function svgMammal() {
+  return `
+  <svg width="240" height="140" viewBox="0 0 240 140" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <path d="M55 108 C70 88, 105 78, 140 82 C170 85, 190 98, 190 112 C190 126, 170 132, 140 132 C105 132, 70 124, 55 108 Z"
+      stroke="#374151" stroke-width="4" fill="none" stroke-linejoin="round"/>
+    <path d="M150 84 C155 70, 170 64, 182 68 C194 72, 198 86, 190 98"
+      stroke="#111827" stroke-width="4" stroke-linecap="round"/>
+    <path d="M178 66 L188 50" stroke="#111827" stroke-width="4" stroke-linecap="round"/>
+    <path d="M174 66 L166 52" stroke="#111827" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="178" cy="84" r="3" fill="#111827"/>
+    <path d="M90 132 L86 118" stroke="#111827" stroke-width="4" stroke-linecap="round"/>
+    <path d="M135 132 L132 118" stroke="#111827" stroke-width="4" stroke-linecap="round"/>
+    <path d="M70 128 H200" stroke="#A16207" stroke-width="4" stroke-linecap="round"/>
+  </svg>`;
+}
+function svgReptile() {
+  return `
+  <svg width="240" height="140" viewBox="0 0 240 140" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <path d="M55 110 C75 92, 100 86, 125 92 C155 99, 180 96, 195 82"
+      stroke="#065F46" stroke-width="4" stroke-linecap="round"/>
+    <path d="M55 110 C70 124, 90 128, 110 122" stroke="#047857" stroke-width="4" stroke-linecap="round"/>
+    <path d="M125 92 C130 82, 142 78, 152 82" stroke="#064E3B" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="150" cy="90" r="3" fill="#064E3B"/>
+    <path d="M70 128 H200" stroke="#A16207" stroke-width="4" stroke-linecap="round"/>
+  </svg>`;
+}
+function svgInsect() {
+  return `
+  <svg width="240" height="140" viewBox="0 0 240 140" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <circle cx="120" cy="78" r="18" stroke="#111827" stroke-width="4"/>
+    <circle cx="92" cy="74" r="10" stroke="#111827" stroke-width="4"/>
+    <circle cx="148" cy="74" r="10" stroke="#111827" stroke-width="4"/>
+    <path d="M103 62 C95 50, 85 44, 70 40" stroke="#111827" stroke-width="4" stroke-linecap="round"/>
+    <path d="M137 62 C145 50, 155 44, 170 40" stroke="#111827" stroke-width="4" stroke-linecap="round"/>
+    <path d="M108 98 L95 112" stroke="#92400E" stroke-width="4" stroke-linecap="round"/>
+    <path d="M132 98 L145 112" stroke="#92400E" stroke-width="4" stroke-linecap="round"/>
+    <path d="M70 128 H190" stroke="#A16207" stroke-width="4" stroke-linecap="round"/>
+  </svg>`;
+}
+function getSvg(kind){
+  switch(kind){
+    case "planta": return svgPlant();
+    case "ave": return svgBird();
+    case "mamifero": return svgMammal();
+    case "reptil": return svgReptile();
+    case "insecto": return svgInsect();
+    default: return svgPlant();
+  }
+}
+
+/* ====== Banco de especies (20) ======
+  - Dificultad aumenta por “esquividez”
+  - Pistas SIEMPRE igual de claras (altura/color/tamaño/grupo)
+*/
+const SPECIES = [
+  // PLANTAS (10)
+  { id:"papaver_rhoeas", kind:"planta", type:"planta", diff:"easy",  name:"Amapola común", height:"Suelo", color:"Rojo", size:"Mediana", group:"En grupos dispersos",
+    repro:"Semillas muy numerosas que el viento puede dispersar.",
+    dimorph:"No presenta dimorfismo.",
+    curious:"Sus pétalos se caen con facilidad: parece frágil, pero es resistente.",
+    wiki:"https://es.wikipedia.org/wiki/Papaver_rhoeas" },
+  { id:"taraxacum", kind:"planta", type:"planta", diff:"easy",  name:"Diente de león", height:"Suelo", color:"Amarillo", size:"Pequeña", group:"En grupos",
+    repro:"Semillas con ‘paracaídas’ que vuelan lejos.",
+    dimorph:"No presenta dimorfismo.",
+    curious:"Una planta puede producir muchísimas semillas en poco tiempo.",
+    wiki:"https://es.wikipedia.org/wiki/Taraxacum_officinale" },
+  { id:"thymus", kind:"planta", type:"planta", diff:"easy",  name:"Tomillo", height:"Suelo", color:"Verde / lila", size:"Pequeña", group:"En manchas",
+    repro:"Florece y atrae polinizadores; dispersa semillas pequeñas.",
+    dimorph:"No evidente.",
+    curious:"Su aroma es una defensa natural frente a algunos herbívoros.",
+    wiki:"https://es.wikipedia.org/wiki/Thymus" },
+  { id:"lavandula", kind:"planta", type:"planta", diff:"easy",  name:"Lavanda", height:"Suelo / media altura", color:"Morado", size:"Mediana", group:"En grupos",
+    repro:"Polinización por insectos; produce semillas en espigas.",
+    dimorph:"No evidente.",
+    curious:"Tolera sequía gracias a hojas estrechas y aceites aromáticos.",
+    wiki:"https://es.wikipedia.org/wiki/Lavandula" },
+  { id:"crataegus", kind:"planta", type:"planta", diff:"medium", name:"Espino albar", height:"Media altura", color:"Blanco", size:"Arbusto", group:"Aislado o setos",
+    repro:"Frutos que dispersan aves y pequeños mamíferos.",
+    dimorph:"No evidente.",
+    curious:"Sus frutos son un ‘supermercado’ invernal para aves.",
+    wiki:"https://es.wikipedia.org/wiki/Crataegus_monogyna" },
+  { id:"rubus", kind:"planta", type:"planta", diff:"medium", name:"Zarzamora", height:"Media altura", color:"Blanco", size:"Arbusto denso", group:"En masas",
+    repro:"Frutos que dispersan animales.",
+    dimorph:"No evidente.",
+    curious:"Da refugio a muchas especies pequeñas: es un ‘hotel’ de biodiversidad.",
+    wiki:"https://es.wikipedia.org/wiki/Rubus_ulmifolius" },
+  { id:"foeniculum", kind:"planta", type:"planta", diff:"medium", name:"Hinojo", height:"Media altura", color:"Verde / amarillo", size:"Alta", group:"En grupos",
+    repro:"Flores en umbelas que generan muchas semillas.",
+    dimorph:"No evidente.",
+    curious:"Su olor puede confundir a algunos herbívoros y atraer polinizadores.",
+    wiki:"https://es.wikipedia.org/wiki/Foeniculum_vulgare" },
+  { id:"juniperus", kind:"planta", type:"planta", diff:"hard",  name:"Enebro", height:"Copas / media altura", color:"Verde oscuro", size:"Árbol pequeño", group:"Aislado",
+    repro:"Sus ‘bayas’ tardan más de un año en madurar.",
+    dimorph:"Puede variar según individuos.",
+    curious:"Aguanta terrenos pobres y clima duro: es un superviviente.",
+    wiki:"https://es.wikipedia.org/wiki/Juniperus_oxycedrus" },
+  { id:"ophrys", kind:"planta", type:"planta", diff:"hard",  name:"Orquídea abeja", height:"Suelo", color:"Marrón/rosado", size:"Pequeña", group:"Aislada",
+    repro:"Engaña a insectos imitando formas y olores; así logra polinización.",
+    dimorph:"No presenta dimorfismo.",
+    curious:"Parece un insecto: es una estrategia brillante para reproducirse.",
+    wiki:"https://es.wikipedia.org/wiki/Ophrys_apifera" },
+  { id:"scirpoides", kind:"planta", type:"planta", diff:"hard",  name:"Junco churrero", height:"Suelo (zonas húmedas)", color:"Verde", size:"Alta", group:"En grupos",
+    repro:"Se expande por semillas y por rizomas.",
+    dimorph:"No evidente.",
+    curious:"Suele indicar humedad cercana: el agua deja pistas.",
+    wiki:"https://es.wikipedia.org/wiki/Scirpoides_holoschoenus" },
+
+  // ANIMALES (10)
+  { id:"passer", kind:"ave", type:"animal", diff:"easy", name:"Gorrión común", height:"Media altura", color:"Marrón/gris", size:"Pequeño", group:"En grupo",
+    repro:"Varias nidadas al año en primavera-verano.",
+    dimorph:"Machos con tonos más marcados en algunas zonas.",
+    curious:"Convive cerca de personas desde hace miles de años.",
+    wiki:"https://es.wikipedia.org/wiki/Passer_domesticus" },
+  { id:"turdus", kind:"ave", type:"animal", diff:"easy", name:"Mirlo común", height:"Media altura", color:"Negro/marrón", size:"Mediano", group:"Pareja",
+    repro:"Nidos en arbustos; puesta de varios huevos.",
+    dimorph:"Macho negro con pico amarillo; hembra parda.",
+    curious:"Aprende rutas y horarios: se adapta rápido a cambios.",
+    wiki:"https://es.wikipedia.org/wiki/Turdus_merula" },
+  { id:"carduelis", kind:"ave", type:"animal", diff:"medium", name:"Jilguero", height:"Media altura", color:"Rojo/blanco/negro", size:"Pequeño", group:"En grupo",
+    repro:"Nidos bien ocultos; cría en primavera.",
+    dimorph:"Machos suelen tener máscara más marcada.",
+    curious:"Aprende cantos escuchando a otros: cultura de aves.",
+    wiki:"https://es.wikipedia.org/wiki/Carduelis_carduelis" },
+  { id:"upupa", kind:"ave", type:"animal", diff:"medium", name:"Abubilla", height:"Suelo / media", color:"Canela/negro", size:"Mediana", group:"Sola o pareja",
+    repro:"Nidos en huecos; cría en primavera.",
+    dimorph:"Poco marcado.",
+    curious:"Abre su cresta como un ‘abanico’ en momentos clave.",
+    wiki:"https://es.wikipedia.org/wiki/Upupa_epops" },
+  { id:"podarcis", kind:"reptil", type:"animal", diff:"easy", name:"Lagartija ibérica", height:"Suelo", color:"Marrón/verdoso", size:"Pequeña", group:"Sola",
+    repro:"Pone huevos en zonas cálidas del suelo.",
+    dimorph:"Machos a veces más vivos.",
+    curious:"Puede soltar la cola para escapar: luego regenera parte.",
+    wiki:"https://es.wikipedia.org/wiki/Podarcis_hispanicus" },
+  { id:"pipistrellus", kind:"mamifero", type:"animal", diff:"medium", name:"Murciélago común", height:"Copas / aire", color:"Oscuro", size:"Pequeño", group:"En grupo",
+    repro:"Crías en colonias; 1 cría suele ser habitual.",
+    dimorph:"Poco evidente.",
+    curious:"Se orienta con ultrasonidos: ‘ve’ con el sonido.",
+    wiki:"https://es.wikipedia.org/wiki/Pipistrellus_pipistrellus" },
+  { id:"falco", kind:"ave", type:"animal", diff:"medium", name:"Cernícalo vulgar", height:"Copas / cielo", color:"Marrón", size:"Mediano", group:"Pareja",
+    repro:"Nidos en huecos o edificios; cría en primavera.",
+    dimorph:"Macho con tonos más grises en la cabeza.",
+    curious:"Puede quedarse quieto en el aire: ‘cernirse’.",
+    wiki:"https://es.wikipedia.org/wiki/Falco_tinnunculus" },
+  { id:"capreolus", kind:"mamifero", type:"animal", diff:"hard", name:"Corzo", height:"Claros / borde de bosque", color:"Marrón rojizo", size:"Grande", group:"Solitario o pareja",
+    repro:"Crías en primavera; muy cuidadoso con el escondite.",
+    dimorph:"Machos con cuernas (estacionales).",
+    curious:"Se mueve sin hacer ruido: observar rastros ayuda.",
+    wiki:"https://es.wikipedia.org/wiki/Capreolus_capreolus" },
+  { id:"alcedo", kind:"ave", type:"animal", diff:"hard", name:"Martín pescador", height:"Riberas (media altura)", color:"Azul intenso", size:"Pequeño", group:"Solitario",
+    repro:"Nido en taludes; cría cuando hay abundancia de peces.",
+    dimorph:"Poco evidente a simple vista.",
+    curious:"Golpea al pez antes de tragárselo: técnica precisa.",
+    wiki:"https://es.wikipedia.org/wiki/Alcedo_atthis" },
+  { id:"genetta", kind:"mamifero", type:"animal", diff:"hard", name:"Gineta", height:"Suelo / media altura", color:"Manchada", size:"Mediana", group:"Sola",
+    repro:"Crías en escondites; actividad más nocturna.",
+    dimorph:"Poco evidente.",
+    curious:"Es gran trepadora: a veces la pista es un rastro.",
+    wiki:"https://es.wikipedia.org/wiki/Genetta_genetta" },
+];
+
+/* ====== Narrativa por nivel ====== */
+const STORY = [
+  { title:"Nivel 1 · Exploradores", text:"Respirad. Mirad el suelo y las orillas. La primera pista suele estar más cerca de lo que creéis." },
+  { title:"Nivel 2 · Observadores", text:"Ahora el río os pide atención. Escuchad, mirad a media altura, y recordad: un equipo unido ve más." },
+  { title:"Nivel 3 · Guardianes", text:"Aquí no gana quien corre. Gana quien entiende. Paciencia: la naturaleza revela sus secretos a quien respeta." }
+];
+
+/* ====== Estado ====== */
+const state = {
+  players: [],               // [{name, score}]
+  roundsRequested: 3,
+  roundIndex: 0,
+  sequence: [],              // especies seleccionadas sin repetición
+  current: null,
+  foundByIndex: null,
+  meeting: { active:false, seconds:15, success:false },
+  timers: { mainId:null, meetingId:null, mainSeconds:0 }
+};
+
+/* ====== Utilidades ====== */
+const $ = (id) => document.getElementById(id);
+function showScreen(id){
+  const screens = ["screenStart","screenSetup","screenGame","screenDiscovery","screenEnd"];
+  screens.forEach(s => $(s).classList.add("hidden"));
+  $(id).classList.remove("hidden");
+}
+function clamp(n, min, max){ return Math.max(min, Math.min(max, n)); }
+function formatMMSS(totalSeconds){
+  const s = Math.max(0, totalSeconds);
+  const m = Math.floor(s/60);
+  const r = s % 60;
+  return `${String(m).padStart(2,"0")}:${String(r).padStart(2,"0")}`;
+}
+function teamTotal(){
+  return state.players.reduce((acc,p)=>acc+p.score,0);
+}
+function renderScoreboard(){
+  $("teamTotal").textContent = teamTotal();
+  $("scoreList").innerHTML = state.players
+    .map(p => `<div class="flex items-center justify-between">
+                <span>${escapeHtml(p.name)}</span>
+                <span class="font-bold">${p.score} pts</span>
+              </div>`)
+    .join("");
+}
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+}
+
+/* ====== Selección de especies sin repetición ======
+  Reglas:
+  - Primera siempre PLANTA
+  - Reparto por dificultad según rondas
+*/
+function pickSequence(rounds){
+  const easy = SPECIES.filter(s=>s.diff==="easy");
+  const medium = SPECIES.filter(s=>s.diff==="medium");
+  const hard = SPECIES.filter(s=>s.diff==="hard");
+
+  const easyPlants = easy.filter(s=>s.type==="planta");
+  if(easyPlants.length === 0) throw new Error("No hay plantas fáciles en el banco.");
+
+  // Distribución recomendada:
+  // 3 rondas: 1 easy (planta), 1 medium, 1 hard
+  // 5 rondas: 2 easy (1ª planta), 2 medium, 1 hard
+  // 10 rondas: 3 easy (1ª planta), 4 medium, 3 hard
+  let plan;
+  if(rounds === 3) plan = { easy:1, medium:1, hard:1 };
+  else if(rounds === 5) plan = { easy:2, medium:2, hard:1 };
+  else plan = { easy:3, medium:4, hard:3 }; // 10
+
+  // Helpers: sample sin repetición
+  function shuffle(arr){
+    const a = [...arr];
+    for(let i=a.length-1;i>0;i--){
+      const j = Math.floor(Math.random()*(i+1));
+      [a[i],a[j]]=[a[j],a[i]];
+    }
+    return a;
+  }
+  function take(arr, n){
+    return shuffle(arr).slice(0, n);
+  }
+
+  // 1ª especie: planta (de fácil)
+  const first = take(easyPlants, 1)[0];
+
+  // El resto: construir pool sin repetir first
+  const easyRest = easy.filter(s=>s.id!==first.id);
+  const mediumAll = medium;
+  const hardAll = hard;
+
+  const pickedEasy = take(easyRest, Math.max(0, plan.easy-1));
+  const pickedMedium = take(mediumAll, plan.medium);
+  const pickedHard = take(hardAll, plan.hard);
+
+  let rest = [...pickedEasy, ...pickedMedium, ...pickedHard];
+
+  // Si por algún motivo no llegamos a rounds (muy raro con 20), completamos con sobrantes sin repetir
+  const usedIds = new Set([first.id, ...rest.map(x=>x.id)]);
+  if(1 + rest.length < rounds){
+    const leftovers = shuffle(SPECIES.filter(s=>!usedIds.has(s.id)));
+    while(1 + rest.length < rounds && leftovers.length){
+      rest.push(leftovers.shift());
+    }
+  }
+
+  // Mezclar el resto para alternar sensaciones, manteniendo primera planta fija
+  rest = shuffle(rest).slice(0, rounds-1);
+  return [first, ...rest];
+}
+
+/* ====== Temporizadores (estables) ====== */
+function clearTimers(){
+  if(state.timers.mainId) clearInterval(state.timers.mainId);
+  if(state.timers.meetingId) clearInterval(state.timers.meetingId);
+  state.timers.mainId = null;
+  state.timers.meetingId = null;
+}
+function startMainTimer(seconds){
+  if(state.timers.mainId) clearInterval(state.timers.mainId);
+  state.timers.mainSeconds = seconds;
+  $("mainTimer").textContent = formatMMSS(state.timers.mainSeconds);
+
+  state.timers.mainId = setInterval(() => {
+    state.timers.mainSeconds = Math.max(0, state.timers.mainSeconds - 1);
+    $("mainTimer").textContent = formatMMSS(state.timers.mainSeconds);
+    if(state.timers.mainSeconds === 0){
+      clearInterval(state.timers.mainId);
+      state.timers.mainId = null;
+      // Sin hallazgo -> ficha sin puntos
+      showDiscovery(false);
+    }
+  }, 1000);
+}
+function startMeetingTimer(){
+  // Timer independiente
+  if(state.timers.meetingId) clearInterval(state.timers.meetingId);
+
+  state.meeting.active = true;
+  state.meeting.success = false;
+  state.meeting.seconds = 15;
+
+  $("meetingBar").classList.remove("hidden");
+  $("meetingTimer").textContent = String(state.meeting.seconds);
+
+  state.timers.meetingId = setInterval(() => {
+    state.meeting.seconds = Math.max(0, state.meeting.seconds - 1);
+    $("meetingTimer").textContent = String(state.meeting.seconds);
+
+    if(state.meeting.seconds === 0){
+      clearInterval(state.timers.meetingId);
+      state.timers.meetingId = null;
+      // Si no se confirmó “Estamos todos”, no hay bonus
+      // Seguimos (en Discovery ya se verá el resumen)
+      $("btnAllHere").disabled = true;
+      $("btnAllHere").classList.add("opacity-60");
+    }
+  }, 1000);
+}
+
+/* ====== Flujo ====== */
+function renderStory(){
+  const level = getLevelIndex();
+  const s = STORY[Math.min(level, STORY.length-1)];
+  $("storyTitle").textContent = s.title;
+  $("storyText").textContent = s.text;
+}
+function getLevelIndex(){
+  // Nivel 1: rondas 0-1, Nivel 2: 2-3, Nivel 3: 4+
+  const i = state.roundIndex;
+  if(i <= 1) return 0;
+  if(i <= 3) return 1;
+  return 2;
+}
+function mainSecondsForRound(){
+  const level = getLevelIndex();
+  if(level === 0) return 5*60;
+  if(level === 1) return 10*60;
+  return 15*60;
+}
+function difficultyChipText(){
+  const level = getLevelIndex();
+  return level === 0 ? "Nivel 1" : (level === 1 ? "Nivel 2" : "Nivel 3");
+}
+
+function loadRound(){
+  state.current = state.sequence[state.roundIndex];
+  state.foundByIndex = null;
+
+  renderStory();
+  $("roundLabel").textContent = `${state.roundIndex+1}/${state.roundsRequested}`;
+  $("difficultyChip").textContent = difficultyChipText();
+
+  // Pistas (siempre mismas)
+  $("clueHeight").textContent = state.current.height;
+  $("clueColor").textContent = state.current.color;
+  $("clueSize").textContent = state.current.size;
+  $("clueGroup").textContent = state.current.group;
+
+  // SVG
+  $("svgHolder").innerHTML = getSvg(state.current.kind);
+
+  // Botones reunión ocultos hasta hallazgo
+  $("btnCall").classList.add("hidden");
+  $("meetingBar").classList.add("hidden");
+  $("btnAllHere").disabled = false;
+  $("btnAllHere").classList.remove("opacity-60");
+
+  // Marcador
+  renderScoreboard();
+
+  // Timer principal
+  startMainTimer(mainSecondsForRound());
+}
+
+function showDiscovery(found){
+  // Parar timer principal al entrar en discovery
+  if(state.timers.mainId) { clearInterval(state.timers.mainId); state.timers.mainId = null; }
+
+  // Header discovery
+  if(found){
+    $("discoveryHeader").textContent = "✅ Habéis encontrado la especie. Ahora toca aprender algo curioso.";
+  } else {
+    $("discoveryHeader").textContent = "⏳ No ha habido hallazgo. La naturaleza también sabe esconderse.";
+  }
+
+  // Mostrar especie
+  $("speciesName").textContent = state.current.name;
+  $("svgHolder2").innerHTML = getSvg(state.current.kind);
+
+  // Info ampliada
+  $("infoRepro").textContent = state.current.repro;
+  $("infoDimorph").textContent = state.current.dimorph;
+  $("infoCurious").textContent = state.current.curious;
+  $("wikiLink").href = state.current.wiki;
+
+  // Resumen puntos de ronda
+  $("roundPointsBox").innerHTML = found
+    ? `<p class="font-bold">📌 Resumen de puntos</p>
+       <p class="mt-1">✅ Hallazgo: <span class="font-semibold">+5 para todas/os</span></p>
+       <p>🏃 Bonus descubridor/a: <span class="font-semibold">+5</span> (a quien lo encontró)</p>
+       <p>🤝 Si el equipo se reunió a tiempo: <span class="font-semibold">+6 para todas/os</span></p>`
+    : `<p class="font-bold">📌 Resumen de la ronda</p>
+       <p class="mt-1">Hoy no ha habido puntos. Pero sí aprendizaje.</p>
+       <p class="mt-1"><span class="font-semibold">👩‍🏫 Invitación:</span> pedid al monitor que os muestre rastros, hojas o señales.</p>`;
+
+  showScreen("screenDiscovery");
+}
+
+function endGame(){
+  clearTimers();
+
+  $("finalTeamTotal").textContent = teamTotal();
+  const ranking = [...state.players].sort((a,b)=>b.score-a.score);
+  $("finalRanking").innerHTML = ranking.map((p, idx) => {
+    const medal = idx === 0 ? "🥇" : idx === 1 ? "🥈" : idx === 2 ? "🥉" : "🌿";
+    return `<div class="flex items-center justify-between">
+              <span>${medal} ${escapeHtml(p.name)}</span>
+              <span class="font-bold">${p.score} pts</span>
+            </div>`;
+  }).join("");
+
+  showScreen("screenEnd");
+  launchPetals();
+}
+
+/* ====== Eventos UI ====== */
+$("btnGoSetup").addEventListener("click", () => showScreen("screenSetup"));
+$("btnBackHome").addEventListener("click", () => showScreen("screenStart"));
+
+$("playerCount").addEventListener("input", () => renderPlayerInputs());
+
+function renderPlayerInputs(){
+  const n = clamp(parseInt($("playerCount").value || "1", 10), 1, 5);
+  $("playerCount").value = String(n);
+  const holder = $("playerNames");
+  holder.innerHTML = "";
+  for(let i=0;i<n;i++){
+    const id = `p_${i}`;
+    holder.innerHTML += `
+      <label class="block text-sm font-semibold mt-2" for="${id}">Nombre ${i+1}</label>
+      <input id="${id}" class="w-full border rounded-xl p-3" placeholder="Ej. Alex" />
+    `;
+  }
+}
+
+$("btnStartGame").addEventListener("click", () => {
+  // Crear jugadores
+  const n = clamp(parseInt($("playerCount").value || "1", 10), 1, 5);
+  const players = [];
+  for(let i=0;i<n;i++){
+    const val = ($(`p_${i}`)?.value || "").trim();
+    players.push({ name: val || `Jugador ${i+1}`, score: 0 });
+  }
+  state.players = players;
+
+  // Rondas
+  const rounds = parseInt($("roundCount").value, 10);
+  state.roundsRequested = [3,5,10].includes(rounds) ? rounds : 3;
+
+  // Secuencia sin repetición + primera planta
+  try {
+    state.sequence = pickSequence(state.roundsRequested);
+  } catch(e){
+    alert("Error al preparar especies: " + e.message);
+    return;
+  }
+
+  state.roundIndex = 0;
+  clearTimers();
+  showScreen("screenGame");
+  loadRound();
+});
+
+$("btnFound").addEventListener("click", () => {
+  // Detener timer principal
+  if(state.timers.mainId) { clearInterval(state.timers.mainId); state.timers.mainId = null; }
+
+  // Seleccionar quién la encontró (simulación grupo en un solo móvil)
+  const options = state.players.map((p,i)=>`${i+1}. ${p.name}`).join("\n");
+  const input = prompt("¿Quién la encontró?\n" + options);
+  const idx = clamp((parseInt(input || "1", 10) - 1), 0, state.players.length-1);
+  state.foundByIndex = idx;
+
+  // Puntos por hallazgo:
+  // +5 a todas/os
+  state.players.forEach(p => p.score += 5);
+  // +5 extra al descubridor/a
+  state.players[idx].score += 5;
+
+  // Habilitar reunión
+  $("btnCall").classList.remove("hidden");
+  renderScoreboard();
+  // Pasamos a ficha directamente (la reunión se gestiona allí también)
+  // pero mantenemos opción de reunión desde pantalla de juego con timer independiente:
+  // => El equipo puede llamar antes de ir a la ficha si quiere.
+  // Mejor experiencia: ir a ficha ya, y mantener reunión si decidieron llamar.
+  showDiscovery(true);
+});
+
+$("btnCall").addEventListener("click", () => {
+  // Si ya hay timer de reunión, no duplicar
+  if(state.timers.meetingId) return;
+  startMeetingTimer();
+});
+
+$("btnAllHere").addEventListener("click", () => {
+  // Solo si meeting está activo y aún queda tiempo
+  if(!state.meeting.active) return;
+  if(state.meeting.seconds <= 0) return;
+
+  state.meeting.success = true;
+  // Bonus +6 a todas/os
+  state.players.forEach(p => p.score += 6);
+
+  // Cerrar timer
+  if(state.timers.meetingId) { clearInterval(state.timers.meetingId); state.timers.meetingId = null; }
+  state.meeting.active = false;
+
+  // Feedback
+  $("meetingTimer").textContent = "0";
+  $("btnAllHere").disabled = true;
+  $("btnAllHere").classList.add("opacity-60");
+  renderScoreboard();
+
+  // Mensaje suave
+  alert("🤝 ¡Equipo reunido! +6 para todas/os.");
+});
+
+$("btnNext").addEventListener("click", () => {
+  // limpiar temporizador de reunión (por si quedó activo)
+  if(state.timers.meetingId) { clearInterval(state.timers.meetingId); state.timers.meetingId = null; }
+  state.meeting.active = false;
+
+  state.roundIndex += 1;
+  if(state.roundIndex >= state.roundsRequested){
+    endGame();
+  } else {
+    showScreen("screenGame");
+    loadRound();
+  }
+});
+
+$("btnRestart").addEventListener("click", () => {
+  clearTimers();
+  showScreen("screenStart");
+});
+
+/* ====== Modal ayuda ====== */
+$("btnHelp").addEventListener("click", () => $("helpModal").classList.remove("hidden"));
+$("btnCloseHelp").addEventListener("click", () => $("helpModal").classList.add("hidden"));
+$("helpModal").addEventListener("click", (e) => {
+  if(e.target === $("helpModal")) $("helpModal").classList.add("hidden");
+});
+
+/* ====== Confeti vegetal ====== */
+function launchPetals(){
+  const petals = ["🌸","🍃","🌼","🌿"];
+  for(let i=0;i<42;i++){
+    const p = document.createElement("div");
+    p.className = "petal";
+    p.textContent = petals[Math.floor(Math.random()*petals.length)];
+    p.style.left = Math.random()*100 + "vw";
+    p.style.animationDuration = (2.2 + Math.random()*2.8) + "s";
+    p.style.opacity = String(0.9);
+    document.body.appendChild(p);
+    setTimeout(()=>p.remove(), 5200);
+  }
+}
+
+/* ====== Inicializar ====== */
+renderPlayerInputs();
+showScreen("screenStart");
+</script>
+</body>
+</html>
